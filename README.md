@@ -16,6 +16,10 @@ Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes 
 - Shows a top-screen overlay when chat is actively capturing keyboard input.
 - Helps prevent confusion where key presses are going to chat instead of gameplay.
 
+### 4) Loading Phase Voice Guard
+- Temporarily suppresses Steam voice recording while connected but not gameplay-ready (loading/transition state).
+- Automatically restores normal voice behavior once gameplay is ready.
+
 ## Requirements
 - Liar's Bar (Steam)
 - MelonLoader `0.7+`
