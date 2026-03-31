@@ -31,5 +31,9 @@ Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes 
 	 - `...\Liar's Bar\Mods\`
 4. Launch the game.
 
+## Development Guardrails
+- CI now fails if merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) are committed.
+- Optional local hook setup: run `git config core.hooksPath .githooks` once in this repo.
+
 ## Disclaimer
 - This is an unofficial community mod and is not affiliated with the game developers.
