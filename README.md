@@ -1,5 +1,35 @@
-How to use:
-- Download MelonLoader from https://github.com/LavaGang/MelonLoader.Installer/
-- Install v0.7 or higher to Liar's Bar. It should auto find the directory.
-- Downlaod the latest release `HappyHour.dll` from the releases page.
-- Put the `HappyHour.dll` in the `Mods` folder within your Liar's Bar Game Files.
+# Happy Hour (Liar's Bar QoL Mod)
+
+Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes that reduce frustrating gameplay edge cases.
+
+## What this mod does
+
+### 1) Quick Disconnect
+- Press `End` to safely leave a broken/stuck lobby without needing Alt+F4.
+- It forces client leave flow (lobby leave + network client stop) and loads `SteamTest` scene.
+
+### 2) Chat Input Safety (in-game)
+- Prevents emote hotkeys from triggering while chat input is active.
+- Includes state repair so blocked emote input does not incorrectly consume emote cooldown.
+
+### 3) Chat Active Indicator
+- Shows a top-screen overlay when chat is actively capturing keyboard input.
+- Helps prevent confusion where key presses are going to chat instead of gameplay.
+
+### 4) Loading Phase Voice Guard
+- Temporarily suppresses Steam voice recording while connected but not gameplay-ready (loading/transition state).
+- Automatically restores normal voice behavior once gameplay is ready.
+
+## Requirements
+- Liar's Bar (Steam)
+- MelonLoader `0.7+`
+
+## Installation
+1. Install MelonLoader into Liar's Bar.
+2. Download `HappyHour.dll` from releases (or build it yourself).
+3. Place `HappyHour.dll` in:
+	 - `...\Liar's Bar\Mods\`
+4. Launch the game.
+
+## Disclaimer
+- This is an unofficial community mod and is not affiliated with the game developers.

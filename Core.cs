@@ -1,29 +1,22 @@
+using HarmonyLib;
 using MelonLoader;
 using Mirror;
 using Steamworks;
-<<<<<<< HEAD
-using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[assembly: MelonInfo(typeof(HappyHour.Core), "Happy Hour", "0.1", "w2og")]
-=======
-using UnityEngine;
-using UnityEngine.SceneManagement;
-
-[assembly: MelonInfo(typeof(HappyHour.Core), "Happy Hour", "1.0.0", "w2og")]
->>>>>>> 960ee05b85f0a136ff9aafd23b9494742ea1cf2d
+[assembly: MelonInfo(typeof(HappyHour.Core), "Happy Hour", "1.0.1", "w2og")]
 [assembly: MelonGame("Curve Animation", "Liar's Bar")]
 
 namespace HappyHour
 {
     public class Core : MelonMod
     {
-<<<<<<< HEAD
         private static readonly HashSet<int> BlockedEmoteFrame = new();
-
         private static readonly HashSet<int> BlockedDeadEmoteFrame = new();
+
+        private static bool voiceSuppressedForLoading;
 
         public override void OnInitializeMelon()
         {
@@ -46,13 +39,11 @@ namespace HappyHour
 
         public override void OnLateUpdate()
         {
-=======
-        public override void OnLateUpdate()
-        {
+            UpdateVoiceMuteForLoading();
+
             // Quick Disconnect - Leave if you're stuck on loading or encounter general gameplay bugs in a lobby.
             // Lobbies can get bugged for many reasons. There's also times where you are unable to press "Esc" and leave.
             // This mod fixes it so you don't have to Alt + F4.
->>>>>>> 960ee05b85f0a136ff9aafd23b9494742ea1cf2d
             if (Input.GetKeyDown(KeyCode.End))
             {
                 if (HostMigration.Instance != null)
@@ -72,7 +63,6 @@ namespace HappyHour
                 SceneManager.LoadScene("SteamTest");
             }
         }
-<<<<<<< HEAD
 
         public override void OnGUI()
         {
@@ -142,7 +132,57 @@ namespace HappyHour
         {
             return Manager.Instance != null && Manager.Instance.Chatting;
         }
-=======
->>>>>>> 960ee05b85f0a136ff9aafd23b9494742ea1cf2d
+
+        private static void UpdateVoiceMuteForLoading()
+        {
+            bool shouldSuppressVoice = ShouldSuppressVoiceForLoading();
+
+            if (shouldSuppressVoice && !voiceSuppressedForLoading)
+            {
+                TryStopVoiceRecording();
+                voiceSuppressedForLoading = true;
+                return;
+            }
+
+            if (!shouldSuppressVoice && voiceSuppressedForLoading)
+            {
+                TryStartVoiceRecording();
+                voiceSuppressedForLoading = false;
+            }
+        }
+
+        private static bool ShouldSuppressVoiceForLoading()
+        {
+            if (!NetworkClient.active)
+                return false;
+
+            if (!NetworkClient.ready)
+                return true;
+
+            string sceneName = SceneManager.GetActiveScene().name;
+            return sceneName != null && sceneName.ToLowerInvariant().Contains("loading");
+        }
+
+        private static void TryStopVoiceRecording()
+        {
+            try
+            {
+                SteamUser.StopVoiceRecording();
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TryStartVoiceRecording()
+        {
+            try
+            {
+                SteamUser.StartVoiceRecording();
+            }
+            catch
+            {
+            }
+        }
     }
 }
