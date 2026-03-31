@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[assembly: MelonInfo(typeof(HappyHour.Core), "Happy Hour", "1.0.1", "w2og")]
+[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "1.0.1", "w2og")]
 [assembly: MelonGame("Curve Animation", "Liar's Bar")]
 
 namespace HappyHour
@@ -15,12 +15,6 @@ namespace HappyHour
     {
         private static readonly HashSet<int> BlockedEmoteFrame = new();
         private static readonly HashSet<int> BlockedDeadEmoteFrame = new();
-
-        private static bool voiceSuppressedForLoading;
-        private static bool voiceDebugLogsEnabled;
-        private static bool lastSuppressionState;
-        private static bool hasSuppressionState;
-        private static float forceSuppressVoiceUntil;
 
         private const float TransitionSuppressSeconds = 10f;
 
@@ -41,29 +35,10 @@ namespace HappyHour
             HarmonyInstance.Patch(
                 AccessTools.Method(typeof(CharController), "Update"),
                 postfix: new HarmonyMethod(typeof(Core), nameof(RepairBlockedEmoteState)));
-
-            HarmonyInstance.Patch(
-                AccessTools.Method(typeof(SteamUser), nameof(SteamUser.StartVoiceRecording)),
-                prefix: new HarmonyMethod(typeof(Core), nameof(BlockSteamVoiceStartDuringLoading)));
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-
-        public override void OnDeinitializeMelon()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         public override void OnLateUpdate()
         {
-            if (Input.GetKeyDown(KeyCode.F7))
-            {
-                voiceDebugLogsEnabled = !voiceDebugLogsEnabled;
-                MelonLogger.Msg($"[VoiceGuard] Debug logs {(voiceDebugLogsEnabled ? "enabled" : "disabled")}");
-            }
-
-            UpdateVoiceMuteForLoading();
-
             // Quick Disconnect - Leave if you're stuck on loading or encounter general gameplay bugs in a lobby.
             // Lobbies can get bugged for many reasons. There's also times where you are unable to press "Esc" and leave.
             // This mod fixes it so you don't have to Alt + F4.
@@ -155,89 +130,5 @@ namespace HappyHour
         {
             return Manager.Instance != null && Manager.Instance.Chatting;
         }
-
-        private static void UpdateVoiceMuteForLoading()
-        {
-            bool shouldSuppressVoice = ShouldSuppressVoiceForLoading();
-
-            if (!hasSuppressionState || lastSuppressionState != shouldSuppressVoice)
-            {
-                lastSuppressionState = shouldSuppressVoice;
-                hasSuppressionState = true;
-
-                if (voiceDebugLogsEnabled)
-                {
-                    string sceneName = SceneManager.GetActiveScene().name;
-                    bool hasLocalPlayer = NetworkClient.localPlayer != null;
-                    MelonLogger.Msg($"[VoiceGuard] Suppression {(shouldSuppressVoice ? "ON" : "OFF")} | scene={sceneName} | active={NetworkClient.active} | ready={NetworkClient.ready} | localPlayer={hasLocalPlayer}");
-                }
-            }
-
-            if (shouldSuppressVoice)
-            {
-                TryStopVoiceRecording();
-                voiceSuppressedForLoading = true;
-                return;
-            }
-
-            if (voiceSuppressedForLoading)
-                voiceSuppressedForLoading = false;
-        }
-
-        private static bool ShouldSuppressVoiceForLoading()
-        {
-            if (!NetworkClient.active)
-                return false;
-
-            if (!NetworkClient.ready)
-                return true;
-
-            if (NetworkClient.localPlayer == null)
-                return true;
-
-            if (Time.unscaledTime < forceSuppressVoiceUntil)
-                return true;
-
-            string sceneName = SceneManager.GetActiveScene().name;
-            bool inGameScene = sceneName != null && sceneName.ToLowerInvariant().Contains("game");
-            if (inGameScene && Manager.Instance == null)
-                return true;
-
-            return sceneName != null && sceneName.ToLowerInvariant().Contains("loading");
-        }
-
-        private static bool BlockSteamVoiceStartDuringLoading()
-        {
-            return !ShouldSuppressVoiceForLoading();
-        }
-
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            string sceneName = scene.name;
-            string sceneNameLower = sceneName == null ? string.Empty : sceneName.ToLowerInvariant();
-
-            bool isTransitionLikeScene = sceneNameLower.Contains("loading") || sceneNameLower.Contains("game");
-            if (!NetworkClient.active && !isTransitionLikeScene)
-                return;
-
-            float newSuppressUntil = Time.unscaledTime + TransitionSuppressSeconds;
-            if (newSuppressUntil > forceSuppressVoiceUntil)
-                forceSuppressVoiceUntil = newSuppressUntil;
-
-            if (voiceDebugLogsEnabled)
-                MelonLogger.Msg($"[VoiceGuard] Scene loaded '{sceneName}', extending suppression for {TransitionSuppressSeconds:0.#}s");
-        }
-
-        private static void TryStopVoiceRecording()
-        {
-            try
-            {
-                SteamUser.StopVoiceRecording();
-            }
-            catch
-            {
-            }
-        }
-
     }
 }
