@@ -21,7 +21,7 @@ Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes 
 - MelonLoader `0.7+`
 
 ## Installation
-1. Install MelonLoader into Liar's Bar.
+1. Install MelonLoader into Liar's Bar using the installer: https://github.com/LavaGang/MelonLoader.Installer
 2. Download `HappyHour.dll` from releases (or build it yourself).
 3. Place `HappyHour.dll` in:
 	 - `...\Liar's Bar\Mods\`
