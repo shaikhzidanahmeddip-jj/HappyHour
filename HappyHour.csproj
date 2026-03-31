@@ -34,20 +34,26 @@
 		<Reference Include="UnityEngine.InputLegacyModule">
 			<HintPath>D:\SteamLibrary\steamapps\common\Liar's Bar\Liar's Bar_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
 		</Reference>
+<<<<<<< HEAD
 		<Reference Include="UnityEngine.IMGUIModule">
 			<HintPath>D:\SteamLibrary\steamapps\common\Liar's Bar\Liar's Bar_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
 		</Reference>
 		<Reference Include="UnityEngine.TextRenderingModule">
 			<HintPath>D:\SteamLibrary\steamapps\common\Liar's Bar\Liar's Bar_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
 		</Reference>
+=======
+>>>>>>> 960ee05b85f0a136ff9aafd23b9494742ea1cf2d
 
 		<!-- MelonLoader -->
 		<Reference Include="MelonLoader">
 			<HintPath>D:\SteamLibrary\steamapps\common\Liar's Bar\MelonLoader\net35\MelonLoader.dll</HintPath>
 		</Reference>
+<<<<<<< HEAD
 		<Reference Include="0Harmony">
 			<HintPath>D:\SteamLibrary\steamapps\common\Liar's Bar\MelonLoader\net35\0Harmony.dll</HintPath>
 		</Reference>
+=======
+>>>>>>> 960ee05b85f0a136ff9aafd23b9494742ea1cf2d
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
