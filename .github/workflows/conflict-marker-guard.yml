@@ -1,0 +1,24 @@
+name: Conflict Marker Guard
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+jobs:
+  check-conflict-markers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fail on merge conflict markers
+        shell: bash
+        run: |
+          if git grep -nE '^(<<<<<<< |=======|>>>>>>> )' -- '*.cs' '*.csproj' '*.md'; then
+            echo "Merge conflict markers detected. Resolve and recommit."
+            exit 1
+          fi
+
+          echo "No merge conflict markers found."
