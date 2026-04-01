@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.1", "w2og")]
+[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.2", "w2og")]
 [assembly: MelonGame("Curve Animation", "Liar's Bar")]
 
 namespace HappyHour
