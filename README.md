@@ -6,15 +6,21 @@ Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes 
 
 ### 1) Quick Disconnect
 - Press `End` to safely leave a broken/stuck lobby without needing Alt+F4.
-- It forces client leave flow (lobby leave + network client stop) and loads `SteamTest` scene.
 
 ### 2) Chat Input Safety (in-game)
 - Prevents emote hotkeys from triggering while chat input is active.
-- Includes state repair so blocked emote input does not incorrectly consume emote cooldown.
 
 ### 3) Chat Active Indicator
 - Shows a top-screen overlay when chat is actively capturing keyboard input.
-- Helps prevent confusion where key presses are going to chat instead of gameplay.
+
+### 4) Lobby Filtering
+- Keeps lobby filters applied per last applied filters.
+
+### 5) Lobby Auto-Refresh
+- Automatically refreshes the lobby list every 15 seconds.
+
+### 6) Chat Message Length Limit
+- Limits chat messages to 128 characters.
 
 ## Requirements
 - Liar's Bar (Steam)
