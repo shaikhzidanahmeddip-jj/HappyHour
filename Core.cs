@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.3", "w2log")]
+[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.3.0", "w2log")]
 [assembly: MelonGame("Curve Animation", "Liar's Bar")]
 
 namespace HappyHour
@@ -25,19 +25,31 @@ namespace HappyHour
         private static LobbyManagerGUI lobbyManager;
         private static bool lobbyManagerDrawn = false;
 
+        private static SettingsGUI settingsGui;
+        private static bool settingsGuiDrawn = false;
+
         private static readonly FieldInfo EmoteReadyField = AccessTools.Field(typeof(CharController), "EmoteReadyy");
         private static readonly FieldInfo EmoteCooldownField = AccessTools.Field(typeof(CharController), "EmoteCooldown");
         private static readonly FieldInfo DeadEmotePlayedField = AccessTools.Field(typeof(CharController), "DeadEmotePlayed");
 
         public override void OnInitializeMelon()
         {
-            var lobbyCategory = MelonPreferences.CreateCategory("HappyHour.Lobby", "Happy Hour Lobby");
+            var rootCategory = MelonPreferences.CreateCategory("HappyHour", "Happy Hour");
+            var lobbyCategory = rootCategory;
             ServerListFilter.Initialize(lobbyCategory);
             ServerListAutoRefresh.Initialize(lobbyCategory);
+
+            var keybindsCategory = rootCategory;
+            Keybinds.Initialize(keybindsCategory);
+
             LobbyBanSystem.Load();
             LobbyBanSystem.SetupHarmonyPatch(HarmonyInstance);
+            UpdateNotifier.Initialize();
+
+            MelonPreferences.Save();
 
             lobbyManager = new LobbyManagerGUI();
+            settingsGui = new SettingsGUI();
 
             HarmonyInstance.Patch(
                 AccessTools.Method(typeof(CharController), "PlayEmote1Sfx"),
@@ -70,7 +82,7 @@ namespace HappyHour
                     steamLobby.JoinLocked = false;
             }
 
-            if (Input.GetKeyDown(KeyCode.End))
+            if (Keybinds.IsQuickDisconnectKeyDown())
             {
                 if (HostMigration.Instance != null)
                     HostMigration.Instance.leavednormal = true;
@@ -89,7 +101,23 @@ namespace HappyHour
                 SceneManager.LoadScene("SteamTest");
             }
 
-            if (Input.GetKeyDown(KeyCode.F10))
+            if (Keybinds.IsSettingsKeyDown())
+            {
+                settingsGui.showSettings = !settingsGui.showSettings;
+
+                if (settingsGui.showSettings && !settingsGuiDrawn)
+                {
+                    MelonEvents.OnGUI.Subscribe(settingsGui.Draw);
+                    settingsGuiDrawn = true;
+                }
+                else if (!settingsGui.showSettings && settingsGuiDrawn)
+                {
+                    MelonEvents.OnGUI.Unsubscribe(settingsGui.Draw);
+                    settingsGuiDrawn = false;
+                }
+            }
+
+            if (Keybinds.IsLobbyManagerKeyDown())
             {
                 lobbyManager.showLobbyManager = !lobbyManager.showLobbyManager;
 
@@ -108,30 +136,32 @@ namespace HappyHour
 
         public override void OnGUI()
         {
-            if (!IsChatActive())
-                return;
-
-            const string chatMessage = "CHAT ACTIVE - GAMEPLAY INPUTS DISABLED";
-
-            var labelStyle = new GUIStyle(GUI.skin.label)
+            if (IsChatActive())
             {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                fontSize = 20,
-                normal = { textColor = Color.red }
-            };
+                const string chatMessage = "CHAT ACTIVE - GAMEPLAY INPUTS DISABLED";
 
-            Vector2 textSize = labelStyle.CalcSize(new GUIContent(chatMessage));
-            float rectWidth = textSize.x + 32f;
-            float rectHeight = Mathf.Max(42f, textSize.y + 14f);
-            var chatModeIndicatorRect = new Rect((Screen.width - rectWidth) / 2f, 24f, rectWidth, rectHeight);
+                var labelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 20,
+                    normal = { textColor = Color.red }
+                };
 
-            var oldColor = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, 0.75f);
-            GUI.Box(chatModeIndicatorRect, GUIContent.none);
-            GUI.color = oldColor;
+                Vector2 textSize = labelStyle.CalcSize(new GUIContent(chatMessage));
+                float rectWidth = textSize.x + 32f;
+                float rectHeight = Mathf.Max(42f, textSize.y + 14f);
+                var chatModeIndicatorRect = new Rect((Screen.width - rectWidth) / 2f, 24f, rectWidth, rectHeight);
 
-            GUI.Label(chatModeIndicatorRect, chatMessage, labelStyle);
+                var oldColor = GUI.color;
+                GUI.color = new Color(0f, 0f, 0f, 0.75f);
+                GUI.Box(chatModeIndicatorRect, GUIContent.none);
+                GUI.color = oldColor;
+
+                GUI.Label(chatModeIndicatorRect, chatMessage, labelStyle);
+            }
+
+            UpdateNotifier.DrawNotification();
         }
 
         private static bool BlockEmoteWhileChatting(CharController __instance)

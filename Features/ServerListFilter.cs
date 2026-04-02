@@ -15,10 +15,10 @@ namespace HappyHour.Features
         public static void Initialize(MelonPreferences_Category category)
         {
             Category = category;
-            DeckFilterPref = Category.CreateEntry("DeckFilter", true, "Deck Filter");
-            DiceFilterPref = Category.CreateEntry("DiceFilter", true, "Dice Filter");
-            PokerFilterPref = Category.CreateEntry("PokerFilter", true, "Poker Filter");
-            SpinFilterPref = Category.CreateEntry("SpinFilter", true, "Spin Filter");
+            DeckFilterPref = Category.CreateEntry("Lobby_DeckFilter", true, "Deck Filter");
+            DiceFilterPref = Category.CreateEntry("Lobby_DiceFilter", true, "Dice Filter");
+            PokerFilterPref = Category.CreateEntry("Lobby_PokerFilter", true, "Poker Filter");
+            SpinFilterPref = Category.CreateEntry("Lobby_SpinFilter", true, "Spin Filter");
         }
 
         public static bool Configure(LobbyListManager lobby)

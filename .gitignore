@@ -1,9 +1,6 @@
 # Solution files
 *.sln
 
-# Planning docs
-plans/
-
 # Build artifacts
 obj/
 bin/
