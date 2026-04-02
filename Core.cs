@@ -1,6 +1,6 @@
+using HappyHour.Features;
 using HarmonyLib;
 using MelonLoader;
-using Mirror;
 using Steamworks;
 using System.Collections.Generic;
 using System.Reflection;
@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.2", "w2og")]
+[assembly: MelonInfo(typeof(HappyHour.Core), "HappyHour", "0.3", "w2log")]
 [assembly: MelonGame("Curve Animation", "Liar's Bar")]
 
 namespace HappyHour
@@ -19,19 +19,11 @@ namespace HappyHour
         private static readonly HashSet<int> BlockedDeadEmoteFrame = new();
 
         private const int MaxChatMessageCharacters = 128;
-        private const float DefaultLobbyAutoRefreshSeconds = 15f;
-        private const float MinLobbyAutoRefreshSeconds = 5f;
 
         private static int LastConfiguredChatUiId = int.MinValue;
-        private static int LastConfiguredLobbyUiId = int.MinValue;
-        private static float NextLobbyRefreshTime;
 
-        private static MelonPreferences_Category LobbyCategory;
-        private static MelonPreferences_Entry<bool> DeckFilterPreference;
-        private static MelonPreferences_Entry<bool> DiceFilterPreference;
-        private static MelonPreferences_Entry<bool> PokerFilterPreference;
-        private static MelonPreferences_Entry<bool> SpinFilterPreference;
-        private static MelonPreferences_Entry<float> LobbyRefreshSecondsPreference;
+        private static LobbyManagerGUI lobbyManager;
+        private static bool lobbyManagerDrawn = false;
 
         private static readonly FieldInfo EmoteReadyField = AccessTools.Field(typeof(CharController), "EmoteReadyy");
         private static readonly FieldInfo EmoteCooldownField = AccessTools.Field(typeof(CharController), "EmoteCooldown");
@@ -39,12 +31,13 @@ namespace HappyHour
 
         public override void OnInitializeMelon()
         {
-            LobbyCategory = MelonPreferences.CreateCategory("HappyHour.Lobby", "Happy Hour Lobby");
-            DeckFilterPreference = LobbyCategory.CreateEntry("DeckFilter", true, "Deck Filter");
-            DiceFilterPreference = LobbyCategory.CreateEntry("DiceFilter", true, "Dice Filter");
-            PokerFilterPreference = LobbyCategory.CreateEntry("PokerFilter", true, "Poker Filter");
-            SpinFilterPreference = LobbyCategory.CreateEntry("SpinFilter", true, "Spin Filter");
-            LobbyRefreshSecondsPreference = LobbyCategory.CreateEntry("LobbyRefreshSeconds", DefaultLobbyAutoRefreshSeconds, "Lobby Refresh Seconds");
+            var lobbyCategory = MelonPreferences.CreateCategory("HappyHour.Lobby", "Happy Hour Lobby");
+            ServerListFilter.Initialize(lobbyCategory);
+            ServerListAutoRefresh.Initialize(lobbyCategory);
+            LobbyBanSystem.Load();
+            LobbyBanSystem.SetupHarmonyPatch(HarmonyInstance);
+
+            lobbyManager = new LobbyManagerGUI();
 
             HarmonyInstance.Patch(
                 AccessTools.Method(typeof(CharController), "PlayEmote1Sfx"),
@@ -67,7 +60,15 @@ namespace HappyHour
         {
             ConfigureChatUi();
             ConfigureLobbyUi();
-            AutoRefreshLobbyList();
+            ServerListAutoRefresh.Update();
+            LobbyBanSystem.Update();
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                var steamLobby = SteamLobby.Instance;
+                if (steamLobby != null)
+                    steamLobby.JoinLocked = false;
+            }
 
             if (Input.GetKeyDown(KeyCode.End))
             {
@@ -81,11 +82,27 @@ namespace HappyHour
                 if (steamLobby != null)
                     steamLobby.JoinLocked = false;
 
-                var networkManager = NetworkManager.singleton as CustomNetworkManager;
+                var networkManager = Mirror.NetworkManager.singleton as CustomNetworkManager;
                 if (networkManager != null)
                     networkManager.StopClient();
 
                 SceneManager.LoadScene("SteamTest");
+            }
+
+            if (Input.GetKeyDown(KeyCode.F10))
+            {
+                lobbyManager.showLobbyManager = !lobbyManager.showLobbyManager;
+
+                if (lobbyManager.showLobbyManager && !lobbyManagerDrawn)
+                {
+                    MelonEvents.OnGUI.Subscribe(lobbyManager.Draw);
+                    lobbyManagerDrawn = true;
+                }
+                else if (!lobbyManager.showLobbyManager && lobbyManagerDrawn)
+                {
+                    MelonEvents.OnGUI.Unsubscribe(lobbyManager.Draw);
+                    lobbyManagerDrawn = false;
+                }
             }
         }
 
@@ -184,108 +201,13 @@ namespace HappyHour
         {
             var lobby = LobbyListManager.instance;
             if (lobby == null)
-            {
-                LastConfiguredLobbyUiId = int.MinValue;
-                return;
-            }
-
-            int lobbyUiId = lobby.GetInstanceID();
-            if (lobbyUiId == LastConfiguredLobbyUiId)
                 return;
 
-            LastConfiguredLobbyUiId = lobbyUiId;
-
-            if (lobby.DeckFilter != null)
+            if (ServerListFilter.Configure(lobby))
             {
-                lobby.DeckFilter.isOn = DeckFilterPreference.Value;
-                lobby.DeckFilter.onValueChanged.AddListener(OnDeckFilterChanged);
+                lobby.GetLobbies();
+                ServerListAutoRefresh.ScheduleNextRefresh();
             }
-
-            if (lobby.DiceFilter != null)
-            {
-                lobby.DiceFilter.isOn = DiceFilterPreference.Value;
-                lobby.DiceFilter.onValueChanged.AddListener(OnDiceFilterChanged);
-            }
-
-            if (lobby.PokerFilter != null)
-            {
-                lobby.PokerFilter.isOn = PokerFilterPreference.Value;
-                lobby.PokerFilter.onValueChanged.AddListener(OnPokerFilterChanged);
-            }
-
-            if (lobby.SpinFilter != null)
-            {
-                lobby.SpinFilter.isOn = SpinFilterPreference.Value;
-                lobby.SpinFilter.onValueChanged.AddListener(OnSpinFilterChanged);
-            }
-
-            lobby.GetLobbies();
-            NextLobbyRefreshTime = Time.unscaledTime + GetLobbyRefreshSeconds();
-        }
-
-        private static void AutoRefreshLobbyList()
-        {
-            var lobby = LobbyListManager.instance;
-            if (lobby == null)
-                return;
-
-            if (Time.unscaledTime < NextLobbyRefreshTime)
-                return;
-
-            if (SteamLobby.Instance != null && SteamLobby.Instance.JoinLocked)
-            {
-                NextLobbyRefreshTime = Time.unscaledTime + GetLobbyRefreshSeconds();
-                return;
-            }
-
-            lobby.GetLobbies();
-            NextLobbyRefreshTime = Time.unscaledTime + GetLobbyRefreshSeconds();
-        }
-
-        private static float GetLobbyRefreshSeconds()
-        {
-            if (LobbyRefreshSecondsPreference == null)
-                return DefaultLobbyAutoRefreshSeconds;
-
-            if (LobbyRefreshSecondsPreference.Value < MinLobbyAutoRefreshSeconds)
-            {
-                LobbyRefreshSecondsPreference.Value = MinLobbyAutoRefreshSeconds;
-                MelonPreferences.Save();
-            }
-
-            return LobbyRefreshSecondsPreference.Value;
-        }
-
-        private static void OnDeckFilterChanged(bool value)
-        {
-            SaveBoolPreference(DeckFilterPreference, value);
-        }
-
-        private static void OnDiceFilterChanged(bool value)
-        {
-            SaveBoolPreference(DiceFilterPreference, value);
-        }
-
-        private static void OnPokerFilterChanged(bool value)
-        {
-            SaveBoolPreference(PokerFilterPreference, value);
-        }
-
-        private static void OnSpinFilterChanged(bool value)
-        {
-            SaveBoolPreference(SpinFilterPreference, value);
-        }
-
-        private static void SaveBoolPreference(MelonPreferences_Entry<bool> entry, bool value)
-        {
-            if (entry == null)
-                return;
-
-            if (entry.Value == value)
-                return;
-
-            entry.Value = value;
-            MelonPreferences.Save();
         }
     }
 }
