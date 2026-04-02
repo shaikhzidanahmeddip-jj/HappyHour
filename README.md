@@ -22,6 +22,14 @@ Happy Hour is a MelonLoader mod for Liar's Bar focused on quality-of-life fixes 
 ### 6) Chat Message Length Limit
 - Limits chat messages to 128 characters.
 
+## Keybinds
+- Settings GUI: `F9`
+- Lobby Manager GUI: `F10`
+- Quick Disconnect: `End`
+
+### How to edit Keybinds
+- Open MelonPreferences.cfg in the UserData folder of Liar's Bar. You  can access this folder quickly by right clicking the game in Steam and selecting "Manage" > "Browse local files".
+
 ## Requirements
 - Liar's Bar (Steam)
 - MelonLoader `0.7+`
